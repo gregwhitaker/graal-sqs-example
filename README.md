@@ -44,3 +44,13 @@ Follow the steps below to run the example:
 4. In a new terminal window, run the following command to begin publishing messages to the queue for the readers to receive:
 
          ./gradlew publishMessages
+
+   If successful, you will see both readers printing messages in their terminals:
+
+         Checking for messages...
+         message-872
+         message-873
+         message-874
+         message-875
+         message-876
+         Checking for messages...
