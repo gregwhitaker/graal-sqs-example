@@ -1,0 +1,62 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'com.palantir.graal'                 version '0.7.2'
+    id 'com.avast.gradle.docker-compose'    version '0.14.2'
+    id 'com.nike.pdm.localstack'            version '0.1.0'
+    id 'com.github.johnrengelman.shadow'    version '6.1.0'
+}
+
+// Project Configuration
+group = 'com.github.gregwhitaker'
+version = '0.1.0'
+mainClassName = 'example.Application'
+description = 'An example of an application that reads from Amazon SQS built as a native image with GraalVM'
+
+// Dependency Configuration
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'software.amazon.awssdk:sqs:2.16.24'
+}
+
+// Graal Configuration
+graal {
+    mainClass 'example.Application'
+    outputName 'graal-sqs-reader'
+    javaVersion '11'
+    graalVersion '21.0.0.2'
+    option '--initialize-at-build-time'
+    option '--allow-incomplete-classpath'
+    option '--enable-http'
+    option '--enable-https'
+    option '--enable-url-protocols=http,https'
+    option '--enable-all-security-services'
+    option "-H:ReflectionConfigurationFiles=${rootDir}/reflect.json"
+}
+
+// Docker Compose Configuration
+dockerCompose {
+    useComposeFiles = [ "${rootDir}/localstack/localstack-docker-compose.yml" ]
+}
+
+// Compile Configuration
+task buildAll {
+    dependsOn('build', 'nativeImage')
+    description('Builds the example application as a packaged jar and a native image.')
+}
+
+// Local Configuration
+run.dependsOn('startLocalStack')
+
+// LocalStack Configuration
+task setupLocalQueue(type: com.nike.pdm.localstack.aws.sqs.CreateSqsQueuesTask) {
+    queueNames = [ 'example-queue' ]
+}
+
+task publishMessages (type: com.nike.pdm.localstack.aws.sqs.PublishSqsTask) {
+    queueNames = [ 'example-queue']
+    message = file("${rootDir}/localstack/messages")
+}
